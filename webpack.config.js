@@ -1,36 +1,45 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const glob = require('glob');
-const PurifyCSSPlugin = require("purifycss-webpack");
 const webpack = require('webpack');
 const CopyWebpackPlugin= require("copy-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const devMode = process.env.NODE_ENV !== 'production'
+
 
 module.exports = {
 	devtool: 'eval-source-map',
-  entry: path.resolve(__dirname, "app/main.js"),
+  entry: {
+    app: [
+      'react-hot-loader/patch',
+      path.resolve(__dirname, "app/app.js")
+    ]
+  },
   output: {
     path: path.resolve(__dirname, "build"),
-    filename: "bundle.js"
+    filename: "[name].js"
+  },
+  resolve: {
+    extensions: ['.js', '.jsx']
   },
   module: {
     rules: [
 		{
 			test: /\.(jsx|js)$/,
-			use: {
-				loader: 'babel-loader',
-				options: {
-					presets: [
-						"env", "react"
-					]
-				}
-			}
+      use: {
+				loader: 'babel-loader'
+      },
+      exclude:/node_modules/
 		},
       {
         test: /\.css$/,
         use: [
-          MiniCssExtractPlugin.loader,
-          "css-loader",
+          {
+            loader: devMode ? 'style-loader' : MiniCssExtractPlugin.loader,
+          },
+          {
+            loader: "css-loader"
+          },
           {
             loader: "postcss-loader",
             options: {
@@ -54,6 +63,18 @@ module.exports = {
         ]
       },
       {
+        test: /\.(woff|svg)$/,
+        use: [
+          {
+            loader: "url-loader",
+            options: {
+              limit: 50000,
+              outputPath: "fonts/"
+            }
+          }
+        ]
+      },
+      {
         test: /\.(htm|html)$/i,
         use: ["html-withimg-loader"]
       },
@@ -61,7 +82,7 @@ module.exports = {
         test: /\.less$/,
         use: [
           {
-            loader: MiniCssExtractPlugin.loader
+            loader: devMode ? 'style-loader' : MiniCssExtractPlugin.loader,
           },
           {
             loader: "css-loader"
@@ -83,7 +104,7 @@ module.exports = {
         test: /\.scss$/,
         use: [
           {
-            loader: MiniCssExtractPlugin.loader
+            loader: devMode ? 'style-loader' : MiniCssExtractPlugin.loader,
           },
           {
             loader: "css-loader"
@@ -112,11 +133,8 @@ module.exports = {
       template: "./app/index.html"
     }),
     new MiniCssExtractPlugin({
-      filename: "[name].css",
-      chunkFilename: "[id].css"
-	}),
-	new PurifyCSSPlugin({
-		paths: glob.sync(path.join(__dirname, 'app/*.html'))
+      filename: devMode ? '[name].css' : '[name].[hash].css',
+      chunkFilename: devMode ? '[id].css' : '[id].[hash].css',
 	}),
 	new webpack.ProvidePlugin({
 		$: "jquery",
@@ -126,12 +144,36 @@ module.exports = {
         from:__dirname+'/app/docs',
         to:'./docs'
 	}]),
-	new webpack.HotModuleReplacementPlugin()
+  new webpack.HotModuleReplacementPlugin(),
   ],
   devServer: {
     contentBase: path.resolve(__dirname, "build"),
     host: "localhost",
     compress: true,
-    port: 8080
+    port: 8080,
+    historyApiFallback: true,  
+    inline: true,  
+    hot: true,
+  },
+  optimization: {
+    splitChunks: {
+      chunks: "async",
+      minSize: 30000,
+      minChunks: 1,
+      maxAsyncRequests: 5,
+      maxInitialRequests: 3,
+      name: true,
+      cacheGroups: {
+          default: {
+              minChunks: 2,
+              priority: -20,
+              reuseExistingChunk: true,
+          },
+          vendors: {
+              test: /[\\/]node_modules[\\/]/,
+              priority: -10
+          }
+      }
+  }
   }
 };
