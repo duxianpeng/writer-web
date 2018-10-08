@@ -28,8 +28,7 @@ module.exports = {
 			test: /\.(jsx|js)$/,
       use: {
 				loader: 'babel-loader'
-      },
-      exclude:/node_modules/
+      }
 		},
       {
         test: /\.css$/,
@@ -88,14 +87,22 @@ module.exports = {
             loader: "css-loader"
           },
           {
-            loader: "less-loader"
-          },
-          {
             loader: "postcss-loader",
             options: {
               config: {
                 path: path.resolve(__dirname, "postcss.config.js")
               }
+            }
+          },
+          {
+            loader: "less-loader",
+            options: {
+              modifyVars: {
+              'primary-color': '#1DA57A',
+              'link-color': '#1DA57A',
+              'border-radius-base': '2px',
+              },
+              javascriptEnabled: true
             }
           }
         ]
